@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>English Vocabulary Games - S1</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #f0fdf4; 
+            touch-action: manipulation;
+            overflow-x: hidden;
+        }
+        
+        h1, h2, h3, .fredoka {
+            font-family: 'Fredoka', sans-serif;
+        }
+
+        @keyframes popIn { 
+            0% { transform: scale(0.8); opacity: 0; } 
+            100% { transform: scale(1); opacity: 1; } 
+        }
+        .pop-in { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        
+        @keyframes shake { 
+            0%, 100% { transform: translateX(0); } 
+            25% { transform: translateX(-8px); } 
+            75% { transform: translateX(8px); } 
+        }
+        .shake { animation: shake 0.4s ease-in-out; }
+
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .pulse-error { animation: pulse-red 1s infinite; }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        .floating { animation: float 3s ease-in-out infinite; }
+
+        .speech-bubble {
+            position: relative;
+            background: #ffffff;
+            border-radius: 1.5rem;
+            border: 4px solid #e2e8f0;
+        }
+        .speech-bubble:after {
+            content: '';
+            position: absolute;
+            right: 100%;
+            top: 50%;
+            margin-top: -15px;
+            border-width: 15px;
+            border-style: solid;
+            border-color: transparent #ffffff transparent transparent;
+        }
+        .speech-bubble:before {
+            content: '';
+            position: absolute;
+            right: 100%;
+            top: 50%;
+            margin-top: -19px;
+            border-width: 19px;
+            border-style: solid;
+            border-color: transparent #e2e8f0 transparent transparent;
+        }
+
+        .option-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .option-btn:hover:not(:disabled) {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+        .option-btn:active:not(:disabled) {
+            transform: translateY(2px) scale(0.98);
+        }
+        
+        .timer-bar {
+            transition: width 0.1s linear, background-color 0.3s ease;
+        }
+
+        #maze-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 2px;
+            background: #cbd5e1;
+            padding: 4px;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .maze-cell {
+            aspect-ratio: 1 / 1;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .cell-wall { background-color: #475569; }
+        .cell-path { background-color: #f8fafc; }
+        .player {
+            font-size: 1.5rem;
+            line-height: 1;
+            z-index: 10;
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
+            transition: transform 0.1s ease-out;
+        }
+        .syllable {
+            position: absolute;
+            background: #ef4444;
+            color: white;
+            font-size: 0.8rem;
+            font-weight: bold;
+            padding: 2px 4px;
+            border-radius: 4px;
+            z-index: 5;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            white-space: nowrap;
+        }
+        .d-pad-btn {
+            background: #3b82f6;
+            color: white;
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 0 #2563eb;
+        }
+        .d-pad-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #2563eb;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-6 px-4 md:px-8 text-slate-800 select-none">
+
+    <header class="w-full max-w-5xl flex flex-col items-center mb-8">
+        <div class="bg-white px-8 py-4 rounded-full shadow-md border-b-4 border-green-400 mb-6 flex items-center gap-3">
+            <h1 class="text-3xl font-extrabold fredoka text-slate-700 tracking-wide">English Vocab Practice</h1>
+        </div>
+
+        <div class="flex flex-wrap justify-center gap-4">
+            <button onclick="switchGame(1)" id="tab-game-1" class="px-8 py-3 rounded-2xl font-bold text-lg shadow-sm border-2 bg-blue-500 text-white border-blue-600 transition-all hover:scale-105">
+                Game 1: Fill in the Blank
+            </button>
+            <button onclick="switchGame(2)" id="tab-game-2" class="px-8 py-3 rounded-2xl font-bold text-lg shadow-sm border-2 bg-white text-slate-500 border-slate-200 transition-all hover:scale-105">
+                Game 2: Spelling Maze
+            </button>
+        </div>
+    </header>
+
+    <main id="game-1-container" class="w-full max-w-5xl bg-white rounded-[2rem] shadow-2xl border-4 border-blue-200 relative overflow-hidden block">
+        <!-- Timer Top Bar -->
+        <div class="w-full bg-slate-100 h-8 flex items-center relative">
+            <div id="timer-bar" class="timer-bar h-full bg-green-500 w-full rounded-r-xl"></div>
+            <div class="absolute w-full text-center font-bold text-slate-700/80 text-sm tracking-widest uppercase z-10 fredoka">
+                Time Remaining: <span id="timer-text">5.0</span>s
+            </div>
+        </div>
+
+        <div class="p-8 md:p-12 flex flex-col lg:flex-row gap-10 items-center justify-between min-h-[450px]">
+            <!-- Left Side: Character & Speech -->
+            <div class="flex-1 flex items-center gap-6 w-full">
+                <div class="w-40 h-40 shrink-0 bg-blue-100 rounded-full border-4 border-blue-300 shadow-inner overflow-hidden flex items-end justify-center floating">
+                    <svg viewBox="0 0 100 100" class="w-32 h-32 text-blue-600">
+                        <circle cx="50" cy="45" r="25" fill="#fcd34d" />
+                        <path d="M 30 40 Q 50 20 70 40 L 70 30 Q 50 10 30 30 Z" fill="#475569" />
+                        <circle cx="40" cy="42" r="3" fill="#1e293b" />
+                        <circle cx="60" cy="42" r="3" fill="#1e293b" />
+                        <path d="M 42 55 Q 50 62 58 55" fill="none" stroke="#ea580c" stroke-width="3" stroke-linecap="round" />
+                        <path d="M 25 90 C 25 70, 75 70, 75 90 Z" fill="#3b82f6" />
+                    </svg>
+                </div>
+                <div class="speech-bubble flex-1 p-6 shadow-lg ml-4">
+                    <p id="question-text" class="text-2xl md:text-3xl font-bold text-slate-700 leading-relaxed fredoka">
+                        <!-- Filled by JS -->
+                    </p>
+                </div>
+            </div>
+
+            <!-- Right Side: Options -->
+            <div class="flex-1 w-full flex flex-col gap-4" id="options-container">
+                <!-- Options populated by JS -->
+            </div>
+        </div>
+
+        <div id="next-overlay" class="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-50 hidden pop-in">
+            <h2 class="text-5xl font-extrabold text-green-500 mb-6 fredoka drop-shadow-sm">Awesome Job! 🎉</h2>
+            <button onclick="loadNextQuestion()" class="bg-blue-500 hover:bg-blue-600 text-white font-black text-2xl py-4 px-12 rounded-full shadow-xl transition-transform hover:scale-110 active:scale-95 flex items-center gap-3 border-b-4 border-blue-700">
+                Next Question
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+            </button>
+        </div>
+    </main>
+
+    <main id="game-2-container" class="w-full max-w-5xl bg-white rounded-[2rem] shadow-2xl border-4 border-indigo-200 relative overflow-hidden hidden">
+        
+        <div class="w-full bg-slate-100 h-8 flex items-center relative">
+            <div id="maze-timer-bar" class="timer-bar h-full bg-indigo-500 w-full rounded-r-xl"></div>
+            <div class="absolute w-full text-center font-bold text-slate-700/80 text-sm tracking-widest uppercase z-10 fredoka">
+                Time Remaining: <span id="maze-timer-text">90.0</span>s
+            </div>
+        </div>
+
+        <div class="p-6 md:p-8 flex flex-col items-center min-h-[450px]">
+            <h2 class="text-2xl font-bold text-indigo-500 fredoka mb-2">School Environment Maze</h2>
+            <p class="text-lg text-slate-600 font-bold mb-4 bg-indigo-50 px-6 py-2 rounded-full border-2 border-indigo-100">
+                Spell: <span id="maze-target-word" class="tracking-widest text-indigo-700 ml-2">_ _ _ _</span>
+            </p>
+
+            <div class="flex flex-col md:flex-row gap-8 items-center justify-center w-full">
+                <!-- Grid Area -->
+                <div id="maze-grid" class="w-full max-w-[350px]">
+                    <!-- Generated by JS -->
+                </div>
+
+                <!-- Touch Controls -->
+                <div class="grid grid-cols-3 gap-2 w-[180px]">
+                    <div></div>
+                    <button class="d-pad-btn" onclick="moveMaze(0, -1)">▲</button>
+                    <div></div>
+                    <button class="d-pad-btn" onclick="moveMaze(-1, 0)">◄</button>
+                    <button class="d-pad-btn bg-slate-200 shadow-[0_4px_0_#94a3b8] text-slate-500" onclick="restartMazeWord()">↻</button>
+                    <button class="d-pad-btn" onclick="moveMaze(1, 0)">►</button>
+                    <div></div>
+                    <button class="d-pad-btn" onclick="moveMaze(0, 1)">▼</button>
+                    <div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Next Word Overlay for Maze -->
+        <div id="maze-next-overlay" class="absolute inset-0 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center z-50 hidden pop-in">
+            <h2 class="text-5xl font-extrabold text-indigo-500 mb-6 fredoka drop-shadow-sm">Perfect Spelling! 🏆</h2>
+            <button onclick="loadNextMazeWord()" class="bg-indigo-500 hover:bg-indigo-600 text-white font-black text-2xl py-4 px-12 rounded-full shadow-xl transition-transform hover:scale-110 active:scale-95 flex items-center gap-3 border-b-4 border-indigo-700">
+                Next Level
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+            </button>
+        </div>
+    </main>
+
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playClap(timeOffset = 0) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const bufferSize = audioCtx.sampleRate * 0.15; 
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1; 
+            const noise = audioCtx.createBufferSource(); noise.buffer = buffer;
+            const noiseFilter = audioCtx.createBiquadFilter(); noiseFilter.type = 'bandpass'; noiseFilter.frequency.value = 1000 + Math.random() * 500; 
+            const noiseEnvelope = audioCtx.createGain();
+            noiseEnvelope.gain.setValueAtTime(0.8, audioCtx.currentTime + timeOffset);
+            noiseEnvelope.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + timeOffset + 0.15);
+            noise.connect(noiseFilter); noiseFilter.connect(noiseEnvelope); noiseEnvelope.connect(audioCtx.destination);
+            noise.start(audioCtx.currentTime + timeOffset);
+        }
+
+        function playSFX(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            
+            if (type === 'correct') {
+                [440, 554, 659, 880].forEach((f, i) => {
+                    setTimeout(() => {
+                        const o = audioCtx.createOscillator(); const g = audioCtx.createGain(); 
+                        o.type = 'sine'; o.frequency.value = f; o.connect(g); g.connect(audioCtx.destination);
+                        g.gain.setValueAtTime(0.3, audioCtx.currentTime); 
+                        g.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.4);
+                        o.start(); o.stop(audioCtx.currentTime + 0.4);
+                    }, i * 100);
+                });
+                for(let i = 0; i < 12; i++) playClap(Math.random() * 1.0);
+            } else if (type === 'error') {
+                osc.type = 'sawtooth'; 
+                osc.frequency.setValueAtTime(150, audioCtx.currentTime); 
+                osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.4);
+                gain.gain.setValueAtTime(0.4, audioCtx.currentTime); 
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+            } else if (type === 'pop') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+            }
+        }
+
+        let currentGameMode = 1;
+
+        const vocabPool = ['smart', 'talkative', 'neighbour', 'different', 'energetic', 'hobby', 'videos', 'secret', 'take a break', 'excited'];
+        const questions = [
+            { text: "I know a lot of things, I am ________.", answer: "smart" },
+            { text: "I talk to my classmates all the time, I am ________.", answer: "talkative" },
+            { text: "She sits next to me, she is my ________.", answer: "neighbour" },
+            { text: "She is not like me, she is ________.", answer: "different" },
+            { text: "She loves to run, she is ________.", answer: "energetic" },
+            { text: "I always play basketball, it is my ________.", answer: "hobby" },
+            { text: "I love filming ________ and upload it to Youtube.", answer: "videos" },
+            { text: "I have a ________ and I don't want to tell anyone.", answer: "secret" },
+            { text: "I am so tired, I want to ________.", answer: "take a break" },
+            { text: "I look forward to getting to know all of you, I'm ________!", answer: "excited" }
+        ];
+
+        let currentQuestionIndex = 0;
+        let isAnswered = false;
+        let timeLeft = 5.0;
+        let timerInterval;
+
+        function getRandomOptions(correctAnswer) {
+            let options = [correctAnswer];
+            let available = vocabPool.filter(w => w !== correctAnswer);
+            available.sort(() => 0.5 - Math.random());
+            options.push(available[0]); options.push(available[1]);
+            return options.sort(() => 0.5 - Math.random());
+        }
+
+        function loadQuestion() {
+            isAnswered = false;
+            document.getElementById('next-overlay').classList.add('hidden');
+            if (currentQuestionIndex >= questions.length) currentQuestionIndex = 0; 
+            const currentQ = questions[currentQuestionIndex];
+            
+            document.getElementById('question-text').innerHTML = currentQ.text.replace('________', `<span id="blank-spot" class="inline-block min-w-[120px] border-b-4 border-slate-400 text-transparent transition-all px-2 text-center bg-slate-100 rounded-t-lg">...</span>`);
+
+            const options = getRandomOptions(currentQ.answer);
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+
+            options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = "option-btn w-full bg-white border-4 border-slate-200 text-slate-600 text-2xl fredoka font-bold py-4 px-6 rounded-2xl text-left flex justify-between items-center group";
+                btn.innerHTML = `<span class="capitalize">${opt}</span><span class="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-lg font-black group-hover:bg-blue-100 group-hover:text-blue-500 transition-colors">${['A','B','C'][index]}</span>`;
+                btn.onclick = () => handleAnswer(opt, currentQ.answer, btn);
+                optionsContainer.appendChild(btn);
+            });
+            startTimer();
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timeLeft = 5.0;
+            const timerBar = document.getElementById('timer-bar');
+            timerBar.style.width = '100%'; timerBar.className = 'timer-bar h-full rounded-r-xl bg-green-500';
+
+            timerInterval = setInterval(() => {
+                timeLeft -= 0.1;
+                document.getElementById('timer-text').innerText = Math.max(0, timeLeft).toFixed(1);
+                timerBar.style.width = `${(timeLeft / 5) * 100}%`;
+
+                if (timeLeft <= 2) timerBar.className = 'timer-bar h-full rounded-r-xl bg-red-500';
+                else if (timeLeft <= 3.5) timerBar.className = 'timer-bar h-full rounded-r-xl bg-yellow-400';
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    if (!isAnswered) {
+                        playSFX('error');
+                        timerBar.style.width = '0%';
+                        const blankSpot = document.getElementById('blank-spot');
+                        blankSpot.classList.add('pulse-error', 'text-red-500');
+                        blankSpot.innerText = "Time's Up! Pick one.";
+                        blankSpot.classList.remove('text-transparent');
+                    }
+                }
+            }, 100);
+        }
+
+        function handleAnswer(selected, correct, btnElement) {
+            if (isAnswered) return;
+            const blankSpot = document.getElementById('blank-spot');
+
+            if (selected === correct) {
+                isAnswered = true; clearInterval(timerInterval); playSFX('correct');
+                btnElement.classList.replace('border-slate-200', 'border-green-500');
+                btnElement.classList.replace('text-slate-600', 'text-green-600');
+                btnElement.classList.add('bg-green-50');
+                
+                blankSpot.innerText = selected.toLowerCase();
+                blankSpot.className = "inline-block min-w-[120px] border-b-4 border-green-500 text-green-600 px-2 text-center bg-green-50 rounded-t-lg font-black pop-in uppercase tracking-wider";
+                
+                setTimeout(() => document.getElementById('next-overlay').classList.remove('hidden'), 1200);
+            } else {
+                playSFX('error');
+                btnElement.classList.add('shake', 'border-red-400', 'bg-red-50', 'text-red-500');
+                btnElement.disabled = true;
+                setTimeout(() => btnElement.classList.remove('shake'), 400);
+            }
+        }
+        function loadNextQuestion() { currentQuestionIndex++; loadQuestion(); }
+
+        const mazeWords = [
+            { word: "playground", parts: ["pl", "ay", "gr", "ound"] },
+            { word: "practice", parts: ["prac", "tice"] },
+            { word: "regularly", parts: ["re", "gu", "lar", "ly"] },
+            { word: "canteen", parts: ["can", "teen"] },
+            { word: "machine", parts: ["ma", "chine"] },
+            { word: "tuck shop", parts: ["t", "uck", "shop"] },
+            { word: "computer", parts: ["com", "pu", "ter"] },
+            { word: "historic", parts: ["his", "tor", "ic"] },
+            { word: "uniform", parts: ["un", "i", "form"] },
+            { word: "stairs", parts: ["st", "air", "s"] }
+        ];
+
+        // 4 different 10x10 maps (1=path, 0=wall)
+        const mazeMaps = [
+            [
+                [1,1,1,1,1,0,1,1,1,1],
+                [1,0,0,0,1,0,1,0,0,1],
+                [1,1,1,0,1,1,1,0,1,1],
+                [0,0,1,0,0,0,1,0,1,0],
+                [1,1,1,1,1,1,1,1,1,1],
+                [1,0,0,0,1,0,0,0,0,1],
+                [1,1,1,0,1,1,1,1,1,1],
+                [0,1,0,0,0,0,1,0,1,0],
+                [1,1,1,1,1,0,1,0,1,1],
+                [1,0,0,0,1,1,1,0,0,1]
+            ],
+            [
+                [1,1,1,0,1,1,1,1,1,1],
+                [1,0,1,0,1,0,0,0,0,1],
+                [1,0,1,1,1,1,1,0,1,1],
+                [1,0,0,0,0,0,1,0,1,0],
+                [1,1,1,1,1,1,1,1,1,1],
+                [0,0,1,0,1,0,0,0,0,1],
+                [1,1,1,0,1,1,1,1,1,1],
+                [1,0,0,0,0,0,0,0,0,1],
+                [1,1,1,1,1,1,1,1,1,1],
+                [1,1,0,0,0,1,0,0,1,1]
+            ],
+            [
+                [1,1,1,1,1,1,1,1,0,1],
+                [1,0,0,0,0,0,0,1,0,1],
+                [1,1,1,1,1,1,1,1,1,1],
+                [0,0,1,0,0,0,0,0,0,0],
+                [1,1,1,1,1,1,1,1,1,1],
+                [1,0,0,0,1,0,0,0,0,1],
+                [1,1,1,1,1,1,1,1,1,1],
+                [0,0,0,0,0,1,0,0,0,1],
+                [1,1,1,1,1,1,1,1,1,1],
+                [1,0,1,0,0,0,0,0,1,1]
+            ],
+            [
+                [1,1,1,1,0,1,1,1,1,1],
+                [1,0,0,1,0,1,0,0,0,1],
+                [1,1,0,1,1,1,1,1,0,1],
+                [0,1,0,0,0,0,0,1,0,1],
+                [1,1,1,1,1,1,0,1,1,1],
+                [1,0,0,0,0,1,0,0,0,0],
+                [1,1,1,0,1,1,1,1,1,1],
+                [0,0,1,0,1,0,0,0,0,1],
+                [1,1,1,1,1,0,1,1,1,1],
+                [1,0,0,0,0,0,1,0,0,1]
+            ]
+        ];
+
+        let currentMazeWordIndex = 0;
+        let currentMap = [];
+        let playerPos = { x: 0, y: 0 };
+        let currentSyllableTarget = 0;
+        let activeSyllables = []; 
+        let mazeTimeLeft = 90.0;
+        let mazeTimerInterval;
+        let isMazeActive = false;
+
+        function loadMazeWord() {
+            isMazeActive = true;
+            document.getElementById('maze-next-overlay').classList.add('hidden');
+            if (currentMazeWordIndex >= mazeWords.length) currentMazeWordIndex = 0;
+            
+            const wordObj = mazeWords[currentMazeWordIndex];
+            currentSyllableTarget = 0;
+            
+            // Random Map
+            const mapIdx = Math.floor(Math.random() * mazeMaps.length);
+            currentMap = JSON.parse(JSON.stringify(mazeMaps[mapIdx])); // Deep copy
+
+            // Setup Start Pos
+            playerPos = { x: 0, y: 0 };
+
+            // Find valid empty spaces for syllables
+            let emptySpaces = [];
+            for (let y = 0; y < 10; y++) {
+                for (let x = 0; x < 10; x++) {
+                    if (currentMap[y][x] === 1 && (x !== 0 || y !== 0)) {
+                        emptySpaces.push({x, y});
+                    }
+                }
+            }
+            // Shuffle and place
+            emptySpaces.sort(() => 0.5 - Math.random());
+            activeSyllables = wordObj.parts.map((part, idx) => ({
+                text: part,
+                order: idx,
+                x: emptySpaces[idx].x,
+                y: emptySpaces[idx].y
+            }));
+
+            updateMazeSpellingUI();
+            renderMaze();
+            startMazeTimer();
+        }
+
+        function restartMazeWord() {
+            // Re-loads current word without advancing index
+            loadMazeWord();
+        }
+
+        function updateMazeSpellingUI() {
+            const wordObj = mazeWords[currentMazeWordIndex];
+            let displayHtml = '';
+            for (let i = 0; i < wordObj.parts.length; i++) {
+                if (i < currentSyllableTarget) {
+                    displayHtml += `<span class="text-green-500">${wordObj.parts[i]}</span> `;
+                } else {
+                    displayHtml += `_ `;
+                }
+            }
+            document.getElementById('maze-target-word').innerHTML = displayHtml.trim();
+        }
+
+        function renderMaze() {
+            const grid = document.getElementById('maze-grid');
+            grid.innerHTML = '';
+            
+            for (let y = 0; y < 10; y++) {
+                for (let x = 0; x < 10; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = `maze-cell ${currentMap[y][x] === 1 ? 'cell-path' : 'cell-wall'}`;
+                    
+                    // Render player
+                    if (playerPos.x === x && playerPos.y === y) {
+                        const p = document.createElement('div');
+                        p.className = 'player';
+                        p.innerText = '🏃';
+                        cell.appendChild(p);
+                    }
+
+                    // Render syllables
+                    const syl = activeSyllables.find(s => s.x === x && s.y === y);
+                    if (syl) {
+                        const sEl = document.createElement('div');
+                        sEl.className = 'syllable';
+                        sEl.innerText = syl.text;
+                        cell.appendChild(sEl);
+                    }
+                    
+                    grid.appendChild(cell);
+                }
+            }
+        }
+
+        function moveMaze(dx, dy) {
+            if (!isMazeActive) return;
+
+            const newX = playerPos.x + dx;
+            const newY = playerPos.y + dy;
+
+            // Bounds check
+            if (newX < 0 || newX >= 10 || newY < 0 || newY >= 10) return;
+            // Wall check
+            if (currentMap[newY][newX] === 0) return;
+
+            // Syllable check
+            const hitSyllableIndex = activeSyllables.findIndex(s => s.x === newX && s.y === newY);
+            if (hitSyllableIndex !== -1) {
+                const hit = activeSyllables[hitSyllableIndex];
+                if (hit.order === currentSyllableTarget) {
+                    // Correct Part!
+                    playSFX('pop');
+                    currentSyllableTarget++;
+                    activeSyllables.splice(hitSyllableIndex, 1);
+                    updateMazeSpellingUI();
+                    
+                    if (currentSyllableTarget === mazeWords[currentMazeWordIndex].parts.length) {
+                        handleMazeWin();
+                    }
+                } else {
+                    // Wrong Part! Error but allow pass
+                    playSFX('error');
+                    const grid = document.getElementById('maze-grid');
+                    grid.classList.add('shake');
+                    setTimeout(() => grid.classList.remove('shake'), 400);
+                    // 移除了 return; 讓玩家可以穿過錯誤的卡片，避免死胡同卡關
+                }
+            }
+
+            // Execute move
+            playerPos.x = newX;
+            playerPos.y = newY;
+            renderMaze();
+        }
+
+        function startMazeTimer() {
+            clearInterval(mazeTimerInterval);
+            mazeTimeLeft = 90.0;
+            const timerBar = document.getElementById('maze-timer-bar');
+            timerBar.style.width = '100%'; timerBar.className = 'timer-bar h-full rounded-r-xl bg-indigo-500';
+
+            mazeTimerInterval = setInterval(() => {
+                mazeTimeLeft -= 0.1;
+                document.getElementById('maze-timer-text').innerText = Math.max(0, mazeTimeLeft).toFixed(1);
+                timerBar.style.width = `${(mazeTimeLeft / 90) * 100}%`;
+
+                if (mazeTimeLeft <= 10) timerBar.className = 'timer-bar h-full rounded-r-xl bg-red-500';
+                else if (mazeTimeLeft <= 20) timerBar.className = 'timer-bar h-full rounded-r-xl bg-yellow-400';
+
+                if (mazeTimeLeft <= 0) {
+                    clearInterval(mazeTimerInterval);
+                    isMazeActive = false;
+                    playSFX('error');
+                    timerBar.style.width = '0%';
+                    document.getElementById('maze-target-word').innerText = "Time's up! Try again.";
+                    document.getElementById('maze-target-word').classList.add('text-red-500');
+                    setTimeout(restartMazeWord, 2000); // Auto restart after 2 seconds
+                }
+            }, 100);
+        }
+
+        function handleMazeWin() {
+            isMazeActive = false;
+            clearInterval(mazeTimerInterval);
+            playSFX('correct');
+            document.getElementById('maze-next-overlay').classList.remove('hidden');
+        }
+
+        function loadNextMazeWord() {
+            currentMazeWordIndex++;
+            loadMazeWord();
+        }
+
+        // Keyboard support for Maze
+        window.addEventListener('keydown', (e) => {
+            if (currentGameMode !== 2 || !isMazeActive) return;
+            switch(e.key) {
+                case 'ArrowUp': moveMaze(0, -1); e.preventDefault(); break;
+                case 'ArrowDown': moveMaze(0, 1); e.preventDefault(); break;
+                case 'ArrowLeft': moveMaze(-1, 0); e.preventDefault(); break;
+                case 'ArrowRight': moveMaze(1, 0); e.preventDefault(); break;
+            }
+        });
+
+        function switchGame(gameId) {
+            currentGameMode = gameId;
+            const btn1 = document.getElementById('tab-game-1');
+            const btn2 = document.getElementById('tab-game-2');
+            const cont1 = document.getElementById('game-1-container');
+            const cont2 = document.getElementById('game-2-container');
+
+            clearInterval(timerInterval);
+            clearInterval(mazeTimerInterval);
+
+            if (gameId === 1) {
+                btn1.className = "px-8 py-3 rounded-2xl font-bold text-lg shadow-sm border-2 bg-blue-500 text-white border-blue-600 transition-all hover:scale-105";
+                btn2.className = "px-8 py-3 rounded-2xl font-bold text-lg shadow-sm border-2 bg-white text-slate-500 border-slate-200 transition-all hover:scale-105";
+                cont1.classList.remove('hidden');
+                cont2.classList.add('hidden');
+                loadQuestion();
+            } else {
+                btn2.className = "px-8 py-3 rounded-2xl font-bold text-lg shadow-sm border-2 bg-indigo-500 text-white border-indigo-600 transition-all hover:scale-105";
+                btn1.className = "px-8 py-3 rounded-2xl font-bold text-lg shadow-sm border-2 bg-white text-slate-500 border-slate-200 transition-all hover:scale-105";
+                cont2.classList.remove('hidden');
+                cont1.classList.add('hidden');
+                loadMazeWord();
+            }
+        }
+
+        window.onload = () => {
+            switchGame(1);
+        };
+    </script>
+</body>
+</html>
