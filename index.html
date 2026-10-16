@@ -167,7 +167,7 @@
         <div class="w-full bg-slate-100 h-8 flex items-center relative">
             <div id="timer-bar" class="timer-bar h-full bg-green-500 w-full rounded-r-xl"></div>
             <div class="absolute w-full text-center font-bold text-slate-700/80 text-sm tracking-widest uppercase z-10 fredoka">
-                Time Remaining: <span id="timer-text">5.0</span>s
+                Time Remaining: <span id="timer-text">10.0</span>s
             </div>
         </div>
 
@@ -246,7 +246,8 @@
 
         <!-- Next Word Overlay for Maze -->
         <div id="maze-next-overlay" class="absolute inset-0 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center z-50 hidden pop-in">
-            <h2 class="text-5xl font-extrabold text-indigo-500 mb-6 fredoka drop-shadow-sm">Perfect Spelling! 🏆</h2>
+            <h2 class="text-5xl font-extrabold text-indigo-500 mb-4 fredoka drop-shadow-sm">Perfect Spelling! 🏆</h2>
+            <p id="maze-win-spelling" class="text-3xl md:text-4xl font-bold text-indigo-700 mb-8 fredoka drop-shadow-sm text-center px-4 tracking-wider"></p>
             <button onclick="loadNextMazeWord()" class="bg-indigo-500 hover:bg-indigo-600 text-white font-black text-2xl py-4 px-12 rounded-full shadow-xl transition-transform hover:scale-110 active:scale-95 flex items-center gap-3 border-b-4 border-indigo-700">
                 Next Level
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -326,7 +327,7 @@
 
         let currentQuestionIndex = 0;
         let isAnswered = false;
-        let timeLeft = 5.0;
+        let timeLeft = 10.0;
         let timerInterval;
 
         function getRandomOptions(correctAnswer) {
@@ -361,17 +362,17 @@
 
         function startTimer() {
             clearInterval(timerInterval);
-            timeLeft = 5.0;
+            timeLeft = 10.0;
             const timerBar = document.getElementById('timer-bar');
             timerBar.style.width = '100%'; timerBar.className = 'timer-bar h-full rounded-r-xl bg-green-500';
 
             timerInterval = setInterval(() => {
                 timeLeft -= 0.1;
                 document.getElementById('timer-text').innerText = Math.max(0, timeLeft).toFixed(1);
-                timerBar.style.width = `${(timeLeft / 5) * 100}%`;
+                timerBar.style.width = `${(timeLeft / 10) * 100}%`;
 
-                if (timeLeft <= 2) timerBar.className = 'timer-bar h-full rounded-r-xl bg-red-500';
-                else if (timeLeft <= 3.5) timerBar.className = 'timer-bar h-full rounded-r-xl bg-yellow-400';
+                if (timeLeft <= 3) timerBar.className = 'timer-bar h-full rounded-r-xl bg-red-500';
+                else if (timeLeft <= 6) timerBar.className = 'timer-bar h-full rounded-r-xl bg-yellow-400';
 
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
@@ -642,6 +643,22 @@
             isMazeActive = false;
             clearInterval(mazeTimerInterval);
             playSFX('correct');
+            
+            const currentWord = mazeWords[currentMazeWordIndex].word;
+            
+            // Format as "p-r-a-c-t-i-c-e - practice"
+            const spelledOut = currentWord.split('').join('-');
+            document.getElementById('maze-win-spelling').innerText = `${spelledOut} - ${currentWord}`;
+            
+            // Pronounce the word using Web Speech API
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // Stop any ongoing speech
+                const utterance = new SpeechSynthesisUtterance(currentWord);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.85; // Slightly slower for clearer pronunciation
+                window.speechSynthesis.speak(utterance);
+            }
+
             document.getElementById('maze-next-overlay').classList.remove('hidden');
         }
 
