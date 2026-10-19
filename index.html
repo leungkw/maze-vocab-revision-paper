@@ -339,7 +339,7 @@
             { text: "She is not like me, she is ________.", answer: "different" },
             { text: "She loves to run, she is ________.", answer: "energetic" },
             { text: "I always play basketball, it is my ________.", answer: "hobby" },
-            { text: "I love filming ________ and upload it to Youtube.", answer: "videos" },
+            { text: "I love filming ________ and upload them to YouTube.", answer: "videos" },
             { text: "I have a ________ and I don't want to tell anyone.", answer: "secret" },
             { text: "I am so tired, I want to ________.", answer: "take a break" },
             { text: "I look forward to getting to know all of you, I'm ________!", answer: "excited" }
@@ -428,7 +428,19 @@
                 blankSpot.innerText = selected.toLowerCase();
                 blankSpot.className = "inline-block min-w-[120px] border-b-4 border-green-500 text-green-600 px-2 text-center bg-green-50 rounded-t-lg font-black pop-in uppercase tracking-wider";
                 
-                setTimeout(() => document.getElementById('next-overlay').classList.remove('hidden'), 1200);
+                setTimeout(() => {
+                    const audio = new Audio(correct + '.mp3');
+                    audio.play().then(() => {
+                        // Wait for the audio to finish before showing the Next Question button
+                        audio.onended = () => {
+                            document.getElementById('next-overlay').classList.remove('hidden');
+                        };
+                    }).catch(err => {
+                        console.warn("Could not play audio (file might be missing):", err);
+                        // Fallback: show the next button immediately if audio fails to load/play
+                        document.getElementById('next-overlay').classList.remove('hidden');
+                    });
+                }, 800); // 800ms delay to let the 'correct' chime play first
             } else {
                 playSFX('error');
                 btnElement.classList.add('shake', 'border-red-400', 'bg-red-50', 'text-red-500');
