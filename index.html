@@ -744,16 +744,34 @@
             const spelledOut = currentWord.split('').join('-');
             document.getElementById('maze-win-spelling').innerText = `${spelledOut} - ${currentWord}`;
             
-            // Pronounce the word using Web Speech API
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel(); // Stop any ongoing speech
-                const utterance = new SpeechSynthesisUtterance(currentWord);
-                utterance.lang = 'en-US';
-                utterance.rate = 0.85; // Slightly slower for clearer pronunciation
-                window.speechSynthesis.speak(utterance);
-            }
-
-            document.getElementById('maze-next-overlay').classList.remove('hidden');
+            // Wait 800ms for the "correct" sound effect to play, then play the word audio
+            setTimeout(() => {
+                const audio = new Audio(currentWord + '.mp3');
+                
+                audio.play().then(() => {
+                    // Wait for the audio to finish before showing the Next Level button
+                    audio.onended = () => {
+                        document.getElementById('maze-next-overlay').classList.remove('hidden');
+                    };
+                }).catch(err => {
+                    console.warn("Could not play audio (file might be missing), using fallback:", err);
+                    
+                    // Fallback: Pronounce the word using Web Speech API if mp3 is missing
+                    if ('speechSynthesis' in window) {
+                        window.speechSynthesis.cancel(); // Stop any ongoing speech
+                        const utterance = new SpeechSynthesisUtterance(currentWord);
+                        utterance.lang = 'en-US';
+                        utterance.rate = 0.85; // Slightly slower for clearer pronunciation
+                        utterance.onend = () => {
+                            document.getElementById('maze-next-overlay').classList.remove('hidden');
+                        };
+                        window.speechSynthesis.speak(utterance);
+                    } else {
+                        // Ultimate fallback if nothing works
+                        document.getElementById('maze-next-overlay').classList.remove('hidden');
+                    }
+                });
+            }, 800);
         }
 
         function loadNextMazeWord() {
